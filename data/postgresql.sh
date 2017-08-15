@@ -1,7 +1,7 @@
 #!/bin/bash
 
 #Version
-PG_VERSION="9.4"
+PG_VERSION="9.6"
 
 #Settings
 DB_NAME=${DB_NAME:-}
@@ -20,7 +20,7 @@ create_dbuser() {
   ##
   ## Check to see if we have pre-defined credentials to use
   if [ -n "${DB_USER}" ]; then
-    
+
     # run postgresql server
     cd /var/lib/pgsql && sudo -u $PG_USER bash -c "$PG_CTL -D $PG_CONFDIR -o \"-c listen_addresses='*'\" -w start"
     # generate password
@@ -35,7 +35,7 @@ create_dbuser() {
     $PSQL -U $PG_USER -c "CREATE ROLE ${DB_USER} with CREATEROLE login superuser PASSWORD '${DB_PASS}';"
     # if the user is already created set authentication method to md5
     sudo -u $PG_USER bash -c "echo \"host    all             all             0.0.0.0/0               md5\" >> $PG_CONFDIR/pg_hba.conf"
-  
+
   else
     # the user is not created set authentication method to trust
     sudo -u $PG_USER bash -c "echo \"host    all             all             0.0.0.0/0               trust\" >> $PG_CONFDIR/pg_hba.conf"
@@ -54,14 +54,14 @@ create_dbuser() {
     fi
 
     # stop postgresql server
-    sudo -u $PG_USER bash -c "$PG_CTL -D $PG_CONFDIR -m fast -w stop"   
-  
+    sudo -u $PG_USER bash -c "$PG_CTL -D $PG_CONFDIR -m fast -w stop"
+
   fi
 }
 
 
 postgresql_server () {
-  
+
   /usr/pgsql-$PG_VERSION/bin/postgres -D /var/lib/pgsql/$PG_VERSION/data -p $PG_PORT
 }
 

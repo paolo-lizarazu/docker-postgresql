@@ -25,15 +25,15 @@ FROM zokeber/centos:latest
 MAINTAINER Daniel Lopez Monagas <zokeber@gmail.com>
 
 # Postgresql version
-ENV PG_VERSION 9.4
-ENV PGVERSION 94
+ENV PG_VERSION 9.6
+ENV PGVERSION 96
 
 # Set the environment variables
 ENV HOME /var/lib/pgsql
 ENV PGDATA /var/lib/pgsql/9.4/data
 
 # Install postgresql and run InitDB
-RUN rpm -vih https://download.postgresql.org/pub/repos/yum/$PG_VERSION/redhat/rhel-7-x86_64/pgdg-centos$PGVERSION-$PG_VERSION-2.noarch.rpm && \
+RUN rpm -vih https://download.postgresql.org/pub/repos/yum/$PG_VERSION/redhat/rhel-7-x86_64/pgdg-centos$PGVERSION-$PG_VERSION-3.noarch.rpm && \
     yum update -y && \
     yum install -y sudo \
     pwgen \

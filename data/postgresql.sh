@@ -4,9 +4,9 @@
 PG_VERSION="9.6"
 
 #Settings
-DB_NAME=${DB_NAME:keycloak-db}
-DB_USER=${DB_USER:keycloak}
-DB_PASS=${DB_PASS:keycloak-pass}
+DB_NAME=keycloak_db
+DB_USER=keycloak
+DB_PASS=keycloak-pass
 
 PG_PORT=5432
 PG_CONFDIR="/var/lib/pgsql/$PG_VERSION/data"
@@ -67,6 +67,15 @@ postgresql_server () {
 
 ####
 ####
-create_dbuser
-echo "Starting PostgreSQL $PG_VERSION server..."
-postgresql_server
+
+
+case "$1" in
+    start)
+        postgresql_server
+        ;;
+    *)
+        create_dbuser
+esac
+#create_dbuser
+#echo "Starting PostgreSQL $PG_VERSION server..."
+#postgresql_server

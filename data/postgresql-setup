@@ -43,6 +43,7 @@ script_result=0
 # code shared between initdb and upgrade actions
 perform_initdb(){
     if [ ! -e "$PGDATA" ]; then
+        echo $"starting initialization ...... $PGDATA"         
         mkdir "$PGDATA" || return 1
         chown postgres:postgres "$PGDATA"
         chmod go-rwx "$PGDATA"

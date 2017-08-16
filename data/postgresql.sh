@@ -4,9 +4,9 @@
 PG_VERSION="9.6"
 
 #Settings
-DB_NAME=${DB_NAME:-}
-DB_USER=${DB_USER:-}
-DB_PASS=${DB_PASS:-}
+DB_NAME=${DB_NAME:keycloak-db}
+DB_USER=${DB_USER:keycloak}
+DB_PASS=${DB_PASS:keycloak-pass}
 
 PG_PORT=5432
 PG_CONFDIR="/var/lib/pgsql/$PG_VERSION/data"

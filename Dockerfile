@@ -94,3 +94,68 @@ RUN alternatives --install /usr/bin/javaws javaws /usr/java/latest/bin/javaws 20
 RUN alternatives --install /usr/bin/javac javac /usr/java/latest/bin/javac 200000
 
 ENV JAVA_HOME /usr/java/latest
+
+#####################################################
+##########   INSTALLING KEYCLOAK  ###################
+#####################################################
+
+# Install packages necessary to run EAP
+RUN yum update -y; yum -y install xmlstarlet saxon augeas bsdtar unzip; yum clean all
+
+# Create a user and group used to launch processes
+# The user ID 1000 is the default for the first "regular" user on Fedora/RHEL,
+# so there is a high chance that this ID will be equal to the current user
+# making it easier to use volumes (no permission issues)
+RUN groupadd -r jboss -g 1000 && useradd -u 1000 -r -g jboss -m -d /opt/jboss -s /sbin/nologin -c "JBoss user" jboss && \
+    chmod 755 /opt/jboss
+
+# Set the working directory to jboss' user home directory
+WORKDIR /opt/jboss
+
+# Specify the user which should be used to execute all commands below
+USER jboss
+
+
+ENV KEYCLOAK_VERSION 3.2.1.Final
+# Enables signals getting passed from startup script to JVM
+# ensuring clean shutdown when container is stopped.
+ENV LAUNCH_JBOSS_IN_BACKGROUND 1
+ENV PROXY_ADDRESS_FORWARDING false
+USER root
+
+RUN yum install -y epel-release && yum install -y jq && yum clean all
+
+USER jboss
+ENV JAVA_HOME /usr/java/latest
+
+RUN cd /opt/jboss/ && curl -L https://downloads.jboss.org/keycloak/$KEYCLOAK_VERSION/keycloak-$KEYCLOAK_VERSION.tar.gz | tar zx && mv /opt/jboss/keycloak-$KEYCLOAK_VERSION /opt/jboss/keycloak
+
+ADD docker-entrypoint.sh /opt/jboss/
+
+USER root
+RUN chmod +x /opt/jboss/docker-entrypoint.sh
+USER jboss
+
+ADD setLogLevel.xsl /opt/jboss/keycloak/
+RUN /usr/java/latest/bin/java -jar /usr/share/java/saxon.jar -s:/opt/jboss/keycloak/standalone/configuration/standalone.xml -xsl:/opt/jboss/keycloak/setLogLevel.xsl -o:/opt/jboss/keycloak/standalone/configuration/standalone.xml
+
+ENV JBOSS_HOME /opt/jboss/keycloak
+
+#Enabling Proxy address forwarding so we can correctly handle SSL termination in front ends
+#such as an OpenShift Router or Apache Proxy
+RUN sed -i -e 's/<http-listener /& proxy-address-forwarding="${env.PROXY_ADDRESS_FORWARDING}" /' $JBOSS_HOME/standalone/configuration/standalone.xml
+
+EXPOSE 8080
+
+ENTRYPOINT [ "/opt/jboss/docker-entrypoint.sh" ]
+
+CMD ["-b", "0.0.0.0"]
+
+#####################################################
+##########   CONFIGURING KEYCLOAK-POSTGRES ##########
+#####################################################
+
+ADD keycloak/changeDatabase.xsl /opt/jboss/keycloak/
+RUN /usr/java/latest/bin/java -jar /usr/share/java/saxon.jar -s:/opt/jboss/keycloak/standalone/configuration/standalone.xml -xsl:/opt/jboss/keycloak/changeDatabase.xsl -o:/opt/jboss/keycloak/standalone/configuration/standalone.xml; java -jar /usr/share/java/saxon.jar -s:/opt/jboss/keycloak/standalone/configuration/standalone-ha.xml -xsl:/opt/jboss/keycloak/changeDatabase.xsl -o:/opt/jboss/keycloak/standalone/configuration/standalone-ha.xml; rm /opt/jboss/keycloak/changeDatabase.xsl
+RUN mkdir -p /opt/jboss/keycloak/modules/system/layers/base/org/postgresql/jdbc/main; cd /opt/jboss/keycloak/modules/system/layers/base/org/postgresql/jdbc/main; curl -O http://central.maven.org/maven2/org/postgresql/postgresql/9.3-1102-jdbc3/postgresql-9.3-1102-jdbc3.jar
+ADD keycloak/module.xml /opt/jboss/keycloak/modules/system/layers/base/org/postgresql/jdbc/main/
